@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube to MKV Downloader</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-2xl mx-auto bg-gray-800 rounded-xl shadow-lg p-8 space-y-6">
+        
+        <!-- Header -->
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-cyan-400">YouTube to MKV Downloader</h1>
+            <p class="text-gray-400 mt-2">Paste a YouTube video URL below to download it as a high-quality MKV file.</p>
+        </div>
+
+        <!-- Form -->
+        <form id="downloadForm" class="space-y-4">
+            <div>
+                <label for="url-input" class="sr-only">YouTube URL</label>
+                <input type="text" id="url-input" placeholder="https://www.youtube.com/watch?v=..." class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 transition duration-200">
+            </div>
+            <button type="submit" id="downloadButton" class="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center space-x-2">
+                <!-- Download Icon SVG -->
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                <span>Download Video</span>
+            </button>
+        </form>
+
+        <!-- Status/Result Area -->
+        <div id="status" class="text-center pt-4 text-gray-300"></div>
+
+    </div>
+
+    <script>
+        const downloadForm = document.getElementById('downloadForm');
+        const downloadButton = document.getElementById('downloadButton');
+        const urlInput = document.getElementById('url-input');
+        const statusDiv = document.getElementById('status');
+
+        downloadForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Prevent the form from reloading the page
+            
+            const youtubeURL = urlInput.value.trim();
+            if (!youtubeURL) {
+                statusDiv.innerHTML = `<p class="text-red-400">Please enter a YouTube URL.</p>`;
+                return;
+            }
+
+            // Disable button and show loading status
+            downloadButton.disabled = true;
+            downloadButton.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...`;
+            statusDiv.innerHTML = '<p class="text-cyan-400">Fetching video information... This may take a moment.</p>';
+
+            try {
+                // Send the URL to our Flask backend
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: youtubeURL }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    statusDiv.innerHTML = `<p class="text-green-400">Download complete! Your file is ready.</p>`;
+                    // Create a link to trigger the file download
+                    window.location.href = `/downloads/${result.download_filename}`;
+                } else {
+                    throw new Error(result.error || 'An unknown error occurred.');
+                }
+
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="text-red-400"><strong>Error:</strong> ${error.message}</p>`;
+            } finally {
+                // Re-enable the button
+                downloadButton.disabled = false;
+                downloadButton.innerHTML = `
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span>Download Video</span>`;
+            }
+        });
+    </script>
+</body>
+</html>
