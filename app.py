@@ -42,14 +42,15 @@ def download():
         return jsonify({'download_filename': final_filename})
 
     except Exception as e:
-        # --- MODIFIED: Enhanced Error Logging ---
         # Print the full, detailed error to the server logs for debugging.
         # The flush=True ensures the message appears immediately in the logs.
         print(f"--- DETAILED ERROR --- \n{e}\n--- END ERROR ---", flush=True)
 
         error_message = str(e)
-        if 'Sign in to confirm your age' in error_message:
-            return jsonify({'error': 'This is an age-restricted video. Please provide a cookies.txt file from your browser to download it.'}), 403
+        # --- MODIFIED: Check for multiple authentication errors ---
+        # This now checks for both age-gate and bot-check messages.
+        if 'Sign in to confirm your age' in error_message or 'confirm you’re not a bot' in error_message:
+            return jsonify({'error': 'This video requires authentication (age-restricted or bot check). Please provide an up-to-date cookies.txt file.'}), 403
         
         # Return a more informative generic error for the user
         return jsonify({'error': 'An unexpected error occurred on the server. The issue has been logged.'}), 500
