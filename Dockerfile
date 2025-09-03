@@ -22,11 +22,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 6. Copy the rest of your application code (app.py, templates/, etc.) into the container.
 COPY . .
 
-# 7. Expose the port the app will run on. This makes it available to Render's network.
-EXPOSE 5000
+# 7. Expose the port the app will run on. This is now more of a documentation step,
+#    as the actual port is determined by the $PORT variable from Render.
+EXPOSE 10000
 
 # 8. Define the command to run your application using Gunicorn.
-#    - `--bind 0.0.0.0:5000`: Binds the server to all network interfaces on the specified port.
-#    - `--timeout 300`: Increases the request timeout to 300 seconds (5 minutes) to
-#      prevent long video downloads from being prematurely cut off.
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--timeout", "300", "app:app"]
+#    - This version uses shell form to correctly substitute the $PORT variable provided by Render.
+#    - --bind 0.0.0.0:$PORT: Binds to the port specified by the hosting environment.
+#    - --workers=1: A best practice for resource-constrained environments like Render's free tier.
+#    - --timeout 300: Increases the request timeout to 300 seconds (5 minutes).
+CMD gunicorn --bind 0.0.0.0:$PORT --workers=1 --timeout 300 app:app
